@@ -37,6 +37,10 @@ Audit Logger (Traceability)
 UI (Streamlit Dashboard)
 
 ---
+## Architecture Diagram
+
+![Architecture](assets/architecture.png)
+---
 ## Architecture Highlights
 
 - Modular multi-agent design
