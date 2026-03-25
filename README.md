@@ -37,7 +37,13 @@ Audit Logger (Traceability)
 UI (Streamlit Dashboard)
 
 ---
+## Architecture Highlights
 
+- Modular multi-agent design
+- Clear separation of concerns
+- Local-first execution
+- Cloud portability (Azure-ready)
+---
 ## Example Output
 
 ```json
