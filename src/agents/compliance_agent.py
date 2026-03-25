@@ -2,39 +2,38 @@ import requests
 import json
 import re
 
+AGENT_NAME = "Compliance Agent"
 
-def ask_ollama(prompt):
+# -------------------------------
+# Ollama call
+# -------------------------------
+def ask_ollama(prompt: str) -> str:
     url = "http://localhost:11434/api/generate"
-
-    payload = {
-        "model": "phi3",   # ✅ use phi3
-        "prompt": prompt,
-        "stream": False
-    }
+    payload = {"model": "phi3", "prompt": prompt, "stream": False}
 
     try:
         response = requests.post(url, json=payload)
+        response.raise_for_status()
         data = response.json()
-
-        print("OLLAMA RAW:", data)
-
-        return data.get("response", "")
-
+        return data.get("response", "").strip()
     except Exception as e:
-        print("OLLAMA ERROR:", str(e))
+        print(f"OLLAMA ERROR ({AGENT_NAME}):", str(e))
         return ""
 
-
-def extract_json(text, query):
+# -------------------------------
+# Extract structured JSON from LLM output
+# -------------------------------
+def extract_json(text: str, query: str) -> dict:
     try:
-        match = re.search(r'\{.*\}', text, re.DOTALL)
+        match = re.search(r'\{[\s\S]*?\}', text)  # non-greedy match
         if match:
             return json.loads(match.group())
-    except:
+    except Exception:
         pass
 
-    # ✅ fallback logic (VERY IMPORTANT)
-    if "data" in query.lower() or "gdpr" in query.lower():
+    # fallback logic
+    query_lower = query.lower()
+    if "data" in query_lower or "gdpr" in query_lower:
         return {
             "risk_level": "HIGH",
             "applicable_regulation": "GDPR",
@@ -49,10 +48,16 @@ def extract_json(text, query):
         "recommendation": "Manual review required"
     }
 
-
-def compliance_check(query):
+# -------------------------------
+# Main compliance check
+# -------------------------------
+def compliance_check(query: str) -> dict:
+    """
+    Processes a query through Compliance Agent
+    Returns structured JSON for UI or logging
+    """
     prompt = f"""
-You are a GDPR compliance expert.
+You are a GDPR / Compliance expert.
 
 Return ONLY JSON. No explanation.
 
@@ -76,4 +81,21 @@ Query: {query}
 """
 
     response = ask_ollama(prompt)
-    return extract_json(response, query)
+    result = extract_json(response, query)
+
+    # Normalize risk level
+    risk_level = result.get("risk_level", "MEDIUM").upper()
+    result["risk_level"] = risk_level
+
+    # Map to numeric score
+    mapping = {
+        "LOW": 0.3,
+        "MEDIUM": 0.6,
+        "HIGH": 0.9
+    }
+    result["risk_score"] = mapping.get(risk_level, 0.5)
+
+    # Add agent trace
+    result["_agent"] = AGENT_NAME
+
+    return result
