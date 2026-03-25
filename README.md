@@ -47,7 +47,7 @@ UI (Streamlit Dashboard)
 ---
 ## Architecture Diagram
 
-![architecture](assets/architecture.jpg)
+![architecture](asset/architecture.jpg)
 
 ---
 
